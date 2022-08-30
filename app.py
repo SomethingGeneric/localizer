@@ -46,6 +46,26 @@ def main():
 
     return resp
 
+@app.route("/users")
+def show_users():
+    extra = ""
+    clear_msg = False
+    msg = request.cookies.get('msg')
+
+    if msg is not None:
+        extra = '<p style="color:red;">' + msg + "</p>"
+        clear_msg = True
+
+    p_title = "User List"
+
+    p_content = db.make_user_list()
+
+    resp = make_response(render_template("page.html", page_title=p_title, content=p_content, emoji=get_time_emoji()))
+
+    if clear_msg:
+        resp.delete_cookie('msg')
+
+    return resp
 
 @app.route("/dologin", methods=["POST"])
 def handle_login():

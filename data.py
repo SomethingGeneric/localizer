@@ -44,14 +44,37 @@ class db:
         if self.check_user(uid):
             return self.get_user(uid)['watching']
 
+    def make_times_list(self, uid):
+        if self.check_user(uid):
+            watching = self.get_watching(uid)
+            if len(watching) == 0:
+                return "<p>You've not added anyone</p>"
+            else:
+                wl = "<ul>"
+                for uid in watching:
+                    wl += "<li><p>" + uid + ": " + self.get_user(uid)['tz'] + "</p></li>"
+                wl += "</ul>"
+                return wl
+
+    def make_user_list(self):
+        users = os.listdir(self.srcdir)
+        the_list = "<ul>"
+        for uid in users:
+            the_list += "<li><p>" + uid + ": " + self.get_user(uid)['tz'] + "</p></li><br/>"
+        the_list += "</ul>"
+        return the_list
+
 
 if __name__ == "__main__":
     db = db("db")
-    print(db.check_user("matt"))
-    db.make_user("matt", "est")
-    print(db.check_user("matt"))
-    print(str(db.get_user("matt")))
-    db.add_watching("matt","joe")
-    print(str(db.get_user("matt")))
-    db.add_watching("matt", "mama")
-    print(str(db.get_user("matt")))
+    timezones = ["gmt", "mnt", "cnt", "eu"]
+
+    from faker import Factory
+    fake = Factory.create()
+
+    import random
+
+    for i in range(100):
+        nuid = fake.name().split(" ")[0].lower().replace(".","")
+        tz = random.choice(timezones)
+        db.make_user(nuid,tz)
