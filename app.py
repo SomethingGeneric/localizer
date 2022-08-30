@@ -1,17 +1,24 @@
-from flask import Flask, render_template, request, make_response, redirect
-
 from datetime import datetime
+import time
+
+from flask import Flask, render_template, request, make_response, redirect
 
 from data import db
 
 app = Flask(__name__)
 db = db("db")
 
+emojis = "🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘🕤🕙🕥🕚🕦🕛🕧"
+
+
+# Adapted from https://stackoverflow.com/a/67467442
+def get_time_emoji():
+    hour = time.strftime('%H:%M:%S')
+    hm = int(time.localtime().tm_hour + time.localtime().tm_min / 30 + 0.5)
+    return f"{emojis[hm]}"
 
 @app.route("/")
 def main():
-    p_content = ""
-    p_title = ""
     extra = ""
     clear_msg = False
 
@@ -32,7 +39,7 @@ def main():
         p_content = extra + render_template("logout.html") + "<br/><p>Server time is: " + current_time + "</p>"
         p_content += "<h2>Your data:</h2><pre><code>" + str(db.get_user(user)) + "</code></pre>"
 
-    resp = make_response(render_template("page.html", page_title=p_title, content=p_content))
+    resp = make_response(render_template("page.html", page_title=p_title, content=p_content, emoji=get_time_emoji()))
 
     if clear_msg:
         resp.delete_cookie('msg')
