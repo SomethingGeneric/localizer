@@ -1,8 +1,7 @@
-import os,yaml
+import os, yaml, pytz
 
 
 class db:
-
     def __init__(self, srcdir):
         if not os.path.exists(srcdir):
             os.makedirs(srcdir)
@@ -15,15 +14,18 @@ class db:
 
     def make_user(self, uid, tz):
         if self.check_user(uid):
-            return False
+            return {"message": "error: uid in use."}
         else:
-            obj = {
-                "tz": tz,
-                "watching": []
-            }
+            if tz not in pytz.all_timezones:
+                if not tz.upper() in pytz.all_timezones:
+                    return {"message": "error: no such tz '" + tz + "'"}
+                else:
+                    tz = tz.upper()
+
+            obj = {"tz": tz, "watching": []}
             with open(self.srcdir + os.sep + uid, "w") as f:
                 f.write(yaml.dump(obj))
-            return True
+            return {"message": "user has been registered"}
 
     def get_user(self, uid):
         if self.check_user(uid):
@@ -36,23 +38,25 @@ class db:
     def add_watching(self, uid, who):
         if self.check_user(uid):
             user = self.get_user(uid)
-            user['watching'].append(who)
+            user["watching"].append(who)
             with open(self.srcdir + os.sep + uid, "w") as f:
                 f.write(yaml.dump(user))
 
     def get_watching(self, uid):
         if self.check_user(uid):
-            return self.get_user(uid)['watching']
+            return self.get_user(uid)["watching"]
 
     def make_times_list(self, uid):
         if self.check_user(uid):
             watching = self.get_watching(uid)
             if len(watching) == 0:
-                return "<p>You've not added anyone</p>"
+                return "<p>Not following any other users.</p>"
             else:
                 wl = "<ul>"
                 for uid in watching:
-                    wl += "<li><p>" + uid + ": " + self.get_user(uid)['tz'] + "</p></li>"
+                    wl += (
+                        "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li>"
+                    )
                 wl += "</ul>"
                 return wl
 
@@ -60,7 +64,9 @@ class db:
         users = os.listdir(self.srcdir)
         the_list = "<ul>"
         for uid in users:
-            the_list += "<li><p>" + uid + ": " + self.get_user(uid)['tz'] + "</p></li><br/>"
+            the_list += (
+                "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li><br/>"
+            )
         the_list += "</ul>"
         return the_list
 
@@ -70,11 +76,12 @@ if __name__ == "__main__":
     timezones = ["gmt", "mnt", "cnt", "eu"]
 
     from faker import Factory
+
     fake = Factory.create()
 
     import random
 
     for i in range(100):
-        nuid = fake.name().split(" ")[0].lower().replace(".","")
+        nuid = fake.name().split(" ")[0].lower().replace(".", "")
         tz = random.choice(timezones)
-        db.make_user(nuid,tz)
+        db.make_user(nuid, tz)
