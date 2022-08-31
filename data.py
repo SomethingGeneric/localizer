@@ -32,6 +32,13 @@ class db:
         if self.check_user_exists(uid):
             return {"message": "error: uid in use."}
         else:
+            if len(uid) < 4:
+                return {"message": "error: user id too short"}
+            if uid.isnumeric():
+                return {"message": "error: please put at least one non-number in your user id"}
+            if len(passw) < 8:
+                return {"message": "error: password too short. Use at least 8 characters"}
+
             if tz not in pytz.all_timezones:
                 if not tz.upper() in pytz.all_timezones:
                     return {"message": "error: no such tz '" + tz + "'"}
@@ -56,12 +63,18 @@ class db:
             if who not in user["watching"]:
                 user["watching"].append(who)
                 self.write_user(uid, user)
+            return {"message": "you're now following " + uid}
+        else:
+            return {"message": "error: why would you follow yourself?"}
 
     def remove_watching(self, uid, who):
         if self.check_user_exists(uid):
             user = self.get_user(uid)
             user["watching"].remove(who)
             self.write_user(uid, user)
+            return {"message": "you're no longer following " + uid}
+        else:
+            return {"message": "error: can't unfollow a user that doesn't exist."}
 
     def get_watching(self, uid):
         if self.check_user_exists(uid):

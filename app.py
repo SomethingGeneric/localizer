@@ -295,10 +295,10 @@ def unauthorized_handler():
 def handle_follow(uid):
     if flask_login.current_user.is_authenticated:
         user = flask_login.current_user.id
-        db.add_watching(user, uid)
+        res = db.add_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie("msg", "You're now following " + uid)
+        resp.set_cookie("msg", res['message'])
         return resp
     else:
         resp = make_response(redirect(request.referrer))
@@ -310,10 +310,10 @@ def handle_follow(uid):
 def handle_unfollow(uid):
     if flask_login.current_user.is_authenticated:
         user = flask_login.current_user.id
-        db.remove_watching(user, uid)
+        res = db.remove_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie("msg", "You're now following " + uid)
+        resp.set_cookie("msg", res['message'])
         return resp
     else:
         resp = make_response(redirect(request.referrer))
