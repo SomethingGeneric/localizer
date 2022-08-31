@@ -11,3 +11,9 @@ if sys.argv[1] == "password":
         print(f"Set new password for {user}")
     else:
         print(f"No such user {user}")
+elif sys.argv[1] == "register":
+    uid = sys.argv[2]
+    passw = sys.argv[3]
+    tz = sys.argv[4]
+    res = db.make_user(uid, passw, tz)
+    print(res['message'])
