@@ -40,6 +40,8 @@ class db:
                 return {"message": "error: password too short. Use at least 8 characters"}
             if "<" in uid or ">" in uid:
                 return {"message": "error: uid contains a prohibited character"}
+            if len(uid) > 15:
+                return {"message": "error: user id too long"}
 
             if tz not in pytz.all_timezones:
                 if not tz.upper() in pytz.all_timezones:
@@ -65,7 +67,7 @@ class db:
             if who not in user["watching"]:
                 user["watching"].append(who)
                 self.write_user(uid, user)
-            return {"message": "you're now following " + uid}
+            return {"message": "you're now following " + who}
         else:
             return {"message": "error: why would you follow yourself?"}
 
@@ -74,7 +76,7 @@ class db:
             user = self.get_user(uid)
             user["watching"].remove(who)
             self.write_user(uid, user)
-            return {"message": "you're no longer following " + uid}
+            return {"message": "you're no longer following " + who}
         else:
             return {"message": "error: can't unfollow a user that doesn't exist."}
 
