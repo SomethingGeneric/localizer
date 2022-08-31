@@ -13,7 +13,6 @@ undeploy:
 	sudo systemctl disable localizer.service
 	sudo rm /etc/systemd/system/localizer.service
 	sudo systemctl daemon-reload
-	rm .use_theme
 update:
 	make undeploy
 	git pull
