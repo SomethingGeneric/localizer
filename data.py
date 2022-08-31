@@ -15,13 +15,15 @@ class db:
             f.write(yaml.dump(obj))
 
     def check_user_exists(self, uid):
+        if uid == "" or uid is None:
+            return False
         if os.path.exists(self.srcdir + os.sep + uid):
             return True
         return False
 
     def auth_user(self, uid, attempt):
         if self.check_user_exists(uid):
-            phash = self.get_user(uid)['passw']
+            phash = self.get_user(uid)["passw"]
             if pbkdf2_sha256.verify(attempt, phash):
                 return True
         return False
@@ -57,7 +59,7 @@ class db:
     def remove_watching(self, uid, who):
         if self.check_user_exists(uid):
             user = self.get_user(uid)
-            user['watching'].remove(who)
+            user["watching"].remove(who)
             self.write_user(uid, user)
 
     def get_watching(self, uid):
@@ -67,13 +69,13 @@ class db:
     def make_times_list(self, uid, personal=False):
         if self.check_user_exists(uid):
             ref_dt = datetime.utcnow()
-            print(ref_dt.strftime('%H:%M:%S'))
+            print(ref_dt.strftime("%H:%M:%S"))
             me = ""
-            my_tz = self.get_user(uid)['tz']
+            my_tz = self.get_user(uid)["tz"]
             print(my_tz)
             my_local = timezone(my_tz)
 
-            my_time = my_local.fromutc(ref_dt).strftime('%H:%M:%S')
+            my_time = my_local.fromutc(ref_dt).strftime("%H:%M:%S")
             print(my_time)
 
             if personal:
@@ -94,12 +96,10 @@ class db:
                 wl = me + "<ul>"
                 for uid in watching:
                     if self.check_user_exists(uid):
-                        their_tz = self.get_user(uid)['tz']
+                        their_tz = self.get_user(uid)["tz"]
                         local = timezone(their_tz)
-                        their_time = local.fromutc(ref_dt).strftime('%H:%M:%S')
-                        wl += (
-                                "<li><p>For " + uid + ", it's " + their_time + "</p></li>"
-                        )
+                        their_time = local.fromutc(ref_dt).strftime("%H:%M:%S")
+                        wl += "<li><p>For " + uid + ", it's " + their_time + "</p></li>"
                 wl += "</ul>"
                 return wl
 
@@ -108,7 +108,7 @@ class db:
         the_list = "<ul>"
         for uid in users:
             the_list += (
-                    "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li><br/>"
+                "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li><br/>"
             )
         the_list += "</ul>"
         return the_list

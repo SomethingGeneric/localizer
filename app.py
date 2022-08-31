@@ -1,14 +1,49 @@
 from datetime import datetime
 import time
 
-from flask import Flask, render_template, request, make_response, redirect
+from flask import (
+    Flask,
+    render_template,
+    request,
+    make_response,
+    redirect,
+    flash,
+    url_for,
+)
+import flask_login
 
 from data import db
-from session import sessionmgr
 
 app = Flask(__name__)
+app.secret_key = "SuperStrongAndComplicated"
+
+login_manager = flask_login.LoginManager()
+login_manager.init_app(app)
+
 db = db("db")
-sessionmgr = sessionmgr()
+
+
+class User(flask_login.UserMixin):
+    pass
+
+
+@login_manager.user_loader
+def user_loader(uid):
+    if not db.check_user_exists(uid):
+        return
+    user = User()
+    user.id = uid
+    return user
+
+
+@login_manager.request_loader
+def request_loader(request):
+    uid = request.form.get("uid")
+    if not db.check_user_exists(uid):
+        return
+    user = User()
+    user.id = uid
+    return user
 
 emojis = "🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘🕤🕙🕥🕚🕦🕛🕧"
 
@@ -29,36 +64,28 @@ def get_emoji_of_current():
 def main():
     extra = ""
     clear_msg = False
-
-    skey = request.cookies.get("skey")
     msg = request.cookies.get("msg")
 
     if msg is not None:
         extra = '<p style="color:red;">' + msg + "</p>"
         clear_msg = True
 
-    if skey is None:
+    if not flask_login.current_user.is_authenticated:
         p_title = "Home"
         p_content = extra + render_template("signin.html")
     else:
-        user = sessionmgr.get_user_by_session(skey)
-        if user != "":
-            p_title = "Hi, " + user
-            now = datetime.utcnow()
-            current_time = now.strftime("%H:%M:%S")
-            p_content = (
-                extra
-                + render_template("logout.html")
-                + "<br/><p>UTC is: "
-                + current_time
-                + "</p>"
-                + db.make_times_list(user, True)
-            )
-
-
-        else:
-            p_title = "Home"
-            p_content = extra + render_template("signin.html")
+        user = flask_login.current_user.id
+        p_title = "Hi, " + user
+        now = datetime.utcnow()
+        current_time = now.strftime("%H:%M:%S")
+        p_content = (
+            extra
+            + render_template("logout.html")
+            + "<br/><p>UTC is: "
+            + current_time
+            + "</p>"
+            + db.make_times_list(user, True)
+        )
 
     resp = make_response(
         render_template(
@@ -135,32 +162,42 @@ def show_user(uid):
 
         return resp
     else:
-        return render_template("page.html", page_title="Not found", content="<p>No such user " + uid + "</p>", emoji=get_emoji_of_current())
+        return render_template(
+            "page.html",
+            page_title="Not found",
+            content="<p>No such user " + uid + "</p>",
+            emoji=get_emoji_of_current(),
+        )
 
 
 @app.route("/register", methods=["GET", "POST"])
 def handle_signup():
     if request.method == "GET":
-        extra = ""
-        clear_msg = False
-        msg = request.cookies.get("msg")
+        if flask_login.current_user.is_authenticated:
+            resp = make_response(redirect("/"))
+            resp.set_cookie('msg',"Please sign out first if you'd like to make a new account.")
+            return resp
+        else:
+            extra = ""
+            clear_msg = False
+            msg = request.cookies.get("msg")
 
-        if msg is not None:
-            extra = '<p style="color:red;">' + msg + "</p>"
-            clear_msg = True
+            if msg is not None:
+                extra = '<p style="color:red;">' + msg + "</p>"
+                clear_msg = True
 
-        resp = make_response(
-            render_template(
-                "page.html",
-                page_title="Register",
-                emoji=get_emoji_of_current(),
-                content=extra + render_template("register.html"),
+            resp = make_response(
+                render_template(
+                    "page.html",
+                    page_title="Register",
+                    emoji=get_emoji_of_current(),
+                    content=extra + render_template("register.html"),
+                )
             )
-        )
-        if clear_msg:
-            resp.delete_cookie("msg")
+            if clear_msg:
+                resp.delete_cookie("msg")
 
-        return resp
+            return resp
     if request.method == "POST":
         uid = request.form["uid"]
         tz = request.form["tz"]
@@ -176,57 +213,91 @@ def handle_signup():
             return resp
 
 
-@app.route("/dologin", methods=["POST", "GET"])
-def handle_login():
+@app.route("/login", methods=["GET", "POST"])
+def login():
     if request.method == "GET":
-        return "Go away."
-    else:
-        given_uid = request.form["nm"]
-        passw = request.form['passwd']
 
-        resp = make_response(redirect("/"))
+        msg = request.cookies.get("msg")
+        hmsg = ""
+        if msg is not None:
+            hmsg = "<p style='color:red;'>" + msg + "</p>"
 
-        if db.auth_user(given_uid, passw):
-            resp.set_cookie("skey", sessionmgr.make_session(given_uid))
-        else:
-            resp.set_cookie("msg", "Auth failed for " + given_uid)
+        resp = make_response(
+            render_template(
+                "page.html",
+                page_title="Login",
+                emoji=get_emoji_of_current(),
+                content=hmsg + render_template("signin.html"),
+            )
+        )
+
+        if msg is not None:
+            resp.delete_cookie("msg")
 
         return resp
 
+    uid = request.form["uid"]
+    if db.check_user_exists(uid) and db.auth_user(uid, request.form["passwd"]):
+        user = User()
+        user.id = uid
+        flask_login.login_user(user, remember=True)
+        return redirect("/")
+    else:
+        resp = make_response(redirect("/login"))
+        resp.set_cookie("msg", "Login failed.")
+        return resp
 
-@app.route("/dologout", methods=["POST", "GET"])
-def handle_logout():
-    resp = make_response(redirect("/"))
-    skey = request.cookies.get("skey")
-    resp.delete_cookie("skey")
-    sessionmgr.destroy_session(sessionmgr.get_user_by_session(skey))
-    return resp
+
+@app.route("/logout")
+def logout():
+    flask_login.logout_user()
+    return redirect("/")
+
+
+@login_manager.unauthorized_handler
+def unauthorized_handler():
+    return "Unauthorized", 401
+
 
 @app.route("/follow/<uid>", methods=["POST", "GET"])
 def handle_follow(uid):
-    skey = request.cookies.get('skey')
-    user = sessionmgr.get_user_by_session(skey)
-
-    if user != "":
+    if flask_login.current_user.is_authenticated:
+        user = flask_login.current_user.id
         db.add_watching(user, uid)
-        return "You're now following " + uid
+
+        resp = make_response(redirect(request.referrer))
+        resp.set_cookie('msg', "You're now following " + uid)
+        return resp
     else:
-        return "Please sign in first."
+        resp = make_response(redirect(request.referrer))
+        resp.set_cookie('msg', "Please sign in first.")
+        return resp
+
 
 @app.route("/unfollow/<uid>")
 def handle_unfollow(uid):
-    skey = request.cookies.get('skey')
-    user = sessionmgr.get_user_by_session(skey)
-
-    if user != "":
+    if flask_login.current_user.is_authenticated:
+        user = flask_login.current_user.id
         db.remove_watching(user, uid)
-        return "You're no longer following " + uid
+
+        resp = make_response(redirect(request.referrer))
+        resp.set_cookie('msg', "You're now following " + uid)
+        return resp
     else:
-        return "Please sign in first."
+        resp = make_response(redirect(request.referrer))
+        resp.set_cookie('msg', "Please sign in first.")
+        return resp
+
 
 @app.route("/passwordex")
 def dump_expg():
-    return render_template("page.html", page_title="Password Information", emoji=get_emoji_of_current(), content=render_template("pws.html"))
+    return render_template(
+        "page.html",
+        page_title="Password Information",
+        emoji=get_emoji_of_current(),
+        content=render_template("pws.html"),
+    )
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=9090, debug=True)
