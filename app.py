@@ -51,7 +51,10 @@ emojis = "🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘�
 # Adapted from https://stackoverflow.com/a/67467442
 def get_emoji_of_time(h, m):
     hm = int(h + m / 30 + 0.5)
-    return f"{emojis[hm]}"
+    try:
+        return f"{emojis[hm]}"
+    catch:
+        return "🕒"
 
 
 def get_emoji_for_user(username):
