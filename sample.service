@@ -1,0 +1,9 @@
+[Unit]
+Description=Localizer gunicorn service
+
+[Service]
+Type=simple
+ExecStart=GCPATH --chdir PATH --workers=8 --bind=0.0.0.0 app:app
+
+[Install]
+WantedBy=multi-user.target

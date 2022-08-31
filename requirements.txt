@@ -4,3 +4,4 @@ PyYAML
 pytz
 passlib
 black
+gunicorn
