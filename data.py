@@ -92,7 +92,7 @@ class db:
                     adj = "You're"
                 else:
                     adj = "They're"
-                return me + "<p>" + adj + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a href='/users/'>userlist</a></p>"
+                return me + "<p>" + adj + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users/'>userlist</a></p>"
             else:
                 wl = me + "<ul>"
                 for uid in watching:
