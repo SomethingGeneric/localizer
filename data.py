@@ -64,7 +64,7 @@ class db:
         if self.check_user_exists(uid):
             return self.get_user(uid)["watching"]
 
-    def make_times_list(self, uid):
+    def make_times_list(self, uid, personal=False):
         if self.check_user_exists(uid):
             ref_dt = datetime.utcnow()
             print(ref_dt.strftime('%H:%M:%S'))
@@ -75,11 +75,21 @@ class db:
 
             my_time = my_local.fromutc(ref_dt).strftime('%H:%M:%S')
             print(my_time)
-            me = "For you, it's " + my_time
+
+            if personal:
+                adj = "you"
+            else:
+                adj = "them"
+
+            me = "For " + adj + ", it's " + my_time
 
             watching = self.get_watching(uid)
             if len(watching) == 0:
-                return me + "<p>Not following any other users.</p>"
+                if personal:
+                    adj = "You're"
+                else:
+                    adj = "They're"
+                return me + "<p>" + adj + " not following any other users.</p>"
             else:
                 wl = me + "<ul>"
                 for uid in watching:

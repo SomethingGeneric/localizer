@@ -52,7 +52,7 @@ def main():
                 + "<br/><p>UTC is: "
                 + current_time
                 + "</p>"
-                + db.make_times_list(user)
+                + db.make_times_list(user, True)
             )
 
 
@@ -118,9 +118,8 @@ def show_user(uid):
         p_title = "User - " + uid
 
         p_content = extra + "<h2>Timezone: " + db.get_user(uid)["tz"] + "</h2>"
-        p_content += "<a href='/follow/" + uid + "'>Follow " + uid + "</a>"
+        p_content += "<a href='/follow/" + uid + "'>Follow " + uid + "</a><br/>"
         p_content += db.make_times_list(uid)
-
 
         resp = make_response(
             render_template(
