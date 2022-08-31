@@ -35,9 +35,13 @@ class db:
             if len(uid) < 4:
                 return {"message": "error: user id too short"}
             if uid.isnumeric():
-                return {"message": "error: please put at least one non-number in your user id"}
+                return {
+                    "message": "error: please put at least one non-number in your user id"
+                }
             if len(passw) < 8:
-                return {"message": "error: password too short. Use at least 8 characters"}
+                return {
+                    "message": "error: password too short. Use at least 8 characters"
+                }
             if "<" in uid or ">" in uid:
                 return {"message": "error: uid contains a prohibited character"}
             if len(uid) > 15:
@@ -109,7 +113,12 @@ class db:
                     adj = "You're"
                 else:
                     adj = "They're"
-                return me + "<p>" + adj + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a></p>"
+                return (
+                    me
+                    + "<p>"
+                    + adj
+                    + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a></p>"
+                )
             else:
                 wl = me + "<ul>"
                 for uid in watching:
@@ -134,10 +143,24 @@ class db:
         the_list = "<ul>"
         for uid in users:
             the_list += (
-                "<li><p><a class='slicklink' href='/users/" + uid + "'>" + uid + "</a>: " + self.get_user(uid)["tz"] + "</p></li><br/>"
+                "<li><p><a class='slicklink' href='/users/"
+                + uid
+                + "'>"
+                + uid
+                + "</a>: "
+                + self.get_user(uid)["tz"]
+                + "</p></li><br/>"
             )
         the_list += "</ul>"
         return the_list
+
+    def set_user_password(self, uid, newpass):
+        if self.check_user_exists(uid):
+            obj = self.get_user(uid)
+            hashed_pw = pbkdf2_sha256.hash(newpass)
+            obj['passw'] = hashed_pw
+            self.write_user(uid, obj)
+
 
 
 if __name__ == "__main__":

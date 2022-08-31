@@ -298,7 +298,7 @@ def handle_follow(uid):
         res = db.add_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie("msg", res['message'])
+        resp.set_cookie("msg", res["message"])
         return resp
     else:
         resp = make_response(redirect(request.referrer))
@@ -313,7 +313,7 @@ def handle_unfollow(uid):
         res = db.remove_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie("msg", res['message'])
+        resp.set_cookie("msg", res["message"])
         return resp
     else:
         resp = make_response(redirect(request.referrer))
