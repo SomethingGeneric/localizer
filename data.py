@@ -51,7 +51,7 @@ class db:
             return {"message": "not found"}
 
     def add_watching(self, uid, who):
-        if self.check_user_exists(uid):
+        if uid != who and self.check_user_exists(uid):
             user = self.get_user(uid)
             if who not in user["watching"]:
                 user["watching"].append(who)
