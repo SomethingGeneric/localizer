@@ -53,8 +53,9 @@ class db:
     def add_watching(self, uid, who):
         if self.check_user_exists(uid):
             user = self.get_user(uid)
-            user["watching"].append(who)
-            self.write_user(uid, user)
+            if who not in user['watching']:
+                user["watching"].append(who)
+                self.write_user(uid, user)
 
     def remove_watching(self, uid, who):
         if self.check_user_exists(uid):

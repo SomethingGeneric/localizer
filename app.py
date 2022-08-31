@@ -1,4 +1,3 @@
-from datetime import datetime
 import time
 
 from flask import (
@@ -7,10 +6,10 @@ from flask import (
     request,
     make_response,
     redirect,
-    flash,
-    url_for,
 )
 import flask_login
+from pytz import timezone
+from datetime import datetime
 
 from data import db
 
@@ -45,6 +44,7 @@ def request_loader(request):
     user.id = uid
     return user
 
+
 emojis = "🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘🕤🕙🕥🕚🕦🕛🕧"
 
 
@@ -52,6 +52,19 @@ emojis = "🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘�
 def get_emoji_of_time(h, m):
     hm = int(h + m / 30 + 0.5)
     return f"{emojis[hm]}"
+
+
+def get_emoji_for_user(username):
+    if db.check_user_exists(username):
+        obj = db.get_user(username)
+        tz = obj['tz']
+        local_tz = timezone(tz)
+        utc = datetime.utcnow()
+        hm = local_tz.fromutc(utc).strftime("%H:%M")
+        h, m = hm.split(":")
+        h = int(h)
+        m = int(m)
+        return get_emoji_of_time(h, m)
 
 
 def get_emoji_of_current():
@@ -65,6 +78,7 @@ def main():
     extra = ""
     clear_msg = False
     msg = request.cookies.get("msg")
+    emoji = get_emoji_of_current()
 
     if msg is not None:
         extra = '<p style="color:red;">' + msg + "</p>"
@@ -79,20 +93,21 @@ def main():
         now = datetime.utcnow()
         current_time = now.strftime("%H:%M:%S")
         p_content = (
-            extra
-            + render_template("logout.html")
-            + "<br/><p>UTC is: "
-            + current_time
-            + "</p>"
-            + db.make_times_list(user, True)
+                extra
+                + render_template("logout.html")
+                + "<br/><p>UTC is: "
+                + current_time
+                + "</p>"
+                + db.make_times_list(user, True)
         )
+        emoji = get_emoji_for_user(user)
 
     resp = make_response(
         render_template(
             "page.html",
             page_title=p_title,
             content=p_content,
-            emoji=get_emoji_of_current(),
+            emoji=emoji,
         )
     )
 
@@ -107,6 +122,10 @@ def show_users():
     extra = ""
     clear_msg = False
     msg = request.cookies.get("msg")
+    emoji = get_emoji_of_current()
+
+    if flask_login.current_user.is_authenticated:
+        emoji = get_emoji_for_user(flask_login.current_user.id)
 
     if msg is not None:
         extra = '<p style="color:red;">' + msg + "</p>"
@@ -121,7 +140,7 @@ def show_users():
             "page.html",
             page_title=p_title,
             content=p_content,
-            emoji=get_emoji_of_current(),
+            emoji=emoji,
         )
     )
 
@@ -137,6 +156,10 @@ def show_user(uid):
         extra = ""
         clear_msg = False
         msg = request.cookies.get("msg")
+        emoji = get_emoji_of_current()
+
+        if flask_login.current_user.is_authenticated:
+            emoji = get_emoji_for_user(flask_login.current_user.id)
 
         if msg is not None:
             extra = '<p style="color:red;">' + msg + "</p>"
@@ -153,7 +176,7 @@ def show_user(uid):
                 "page.html",
                 page_title=p_title,
                 content=p_content,
-                emoji=get_emoji_of_current(),
+                emoji=emoji,
             )
         )
 
@@ -162,11 +185,15 @@ def show_user(uid):
 
         return resp
     else:
+        emoji = get_emoji_of_current()
+
+        if flask_login.current_user.is_authenticated:
+            emoji = get_emoji_for_user(flask_login.current_user.id)
         return render_template(
             "page.html",
             page_title="Not found",
             content="<p>No such user " + uid + "</p>",
-            emoji=get_emoji_of_current(),
+            emoji=emoji,
         )
 
 
@@ -175,7 +202,7 @@ def handle_signup():
     if request.method == "GET":
         if flask_login.current_user.is_authenticated:
             resp = make_response(redirect("/"))
-            resp.set_cookie('msg',"Please sign out first if you'd like to make a new account.")
+            resp.set_cookie('msg', "Please sign out first if you'd like to make a new account.")
             return resp
         else:
             extra = ""
@@ -291,10 +318,14 @@ def handle_unfollow(uid):
 
 @app.route("/passwordex")
 def dump_expg():
+    emoji = get_emoji_of_current()
+
+    if flask_login.current_user.is_authenticated:
+        emoji = get_emoji_for_user(flask_login.current_user.id)
     return render_template(
         "page.html",
         page_title="Password Information",
-        emoji=get_emoji_of_current(),
+        emoji=emoji,
         content=render_template("pws.html"),
     )
 
