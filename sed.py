@@ -1,4 +1,4 @@
-import os, subprocess
+import os, subprocess, getpass
 
 text = open("new.service").read()
 text = text.replace(
@@ -8,6 +8,7 @@ text = text.replace(
     .strip(),
 )
 text = text.replace("PATH", os.getcwd())
+text = text.replace("WHO", getpass.getuser())
 
 os.remove("new.service")
 with open("new.service", "w") as f:
