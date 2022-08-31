@@ -11,8 +11,9 @@ from flask import (
 import flask_login
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_login import login_required
 from pytz import timezone
-
+from werkzeug.exceptions import HTTPException
 
 from data import db
 
@@ -108,6 +109,7 @@ def main():
         p_content = (
             extra
             + render_template("logout.html")
+            + "<br/><p><a class='slicklink' href='/settings'>Settings</a></p>"
             + "<br/><p>UTC is: "
             + current_time
             + "</p>"
@@ -278,17 +280,17 @@ def login():
             resp.delete_cookie("msg")
 
         return resp
-
-    uid = request.form["uid"]
-    if db.check_user_exists(uid) and db.auth_user(uid, request.form["passwd"]):
-        user = User()
-        user.id = uid
-        flask_login.login_user(user, remember=True)
-        return redirect("/")
     else:
-        resp = make_response(redirect("/login"))
-        resp.set_cookie("msg", "Login failed.")
-        return resp
+        uid = request.form["uid"]
+        if db.check_user_exists(uid) and db.auth_user(uid, request.form["passwd"]):
+            user = User()
+            user.id = uid
+            flask_login.login_user(user, remember=True)
+            return redirect("/")
+        else:
+            resp = make_response(redirect("/login"))
+            resp.set_cookie("msg", "Login failed.")
+            return resp
 
 
 @app.route("/logout")
@@ -299,7 +301,9 @@ def logout():
 
 @login_manager.unauthorized_handler
 def unauthorized_handler():
-    return "Unauthorized", 401
+    resp = make_response(redirect("/"))
+    resp.set_cookie("msg", "You need to sign in first.")
+    return resp
 
 
 @app.route("/follow/<uid>", methods=["POST", "GET"])
@@ -344,6 +348,50 @@ def dump_expg():
         emoji=emoji,
         content=render_template("pws.html"),
     )
+
+
+@app.route("/settings", methods=["GET", "POST"])
+@login_required
+def settings():
+    if request.method == "GET":
+        emoji = get_emoji_for_user(flask_login.current_user.id)
+        return render_template(
+            "page.html",
+            page_title=f"Settings for {flask_login.current_user.id}",
+            emoji=emoji,
+            content=render_template("settings.html"),
+        )
+    else:
+        newtz = request.form["tz"]
+        newpass = request.form["passwd"]
+        uid = flask_login.current_user.id
+
+        status = ""
+
+        if newtz != "":
+            res = db.set_user_tz(uid, newtz)
+            if "error" not in res:
+                status += f"Set your TZ to {newtz}."
+            else:
+                status += f"Failed to set new tz because: {res['msg']}."
+
+        if newpass != "":
+            res = db.set_user_password(uid, newpass)
+            if "error" in res:
+                status += f"\nFailed to set new password because: {res['msg']}"
+            else:
+                status += "\nSet new password."
+
+        resp = make_response(redirect("/"))
+        resp.set_cookie("msg", status)
+        return resp
+
+
+@app.errorhandler(HTTPException)
+def oopsie(e):
+    resp = make_response(redirect("/"))
+    resp.set_cookie("msg", f"Error {e.code}: {str(e)}")
+    return resp
 
 
 if __name__ == "__main__":

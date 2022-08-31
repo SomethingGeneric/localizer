@@ -158,9 +158,23 @@ class db:
         if self.check_user_exists(uid):
             obj = self.get_user(uid)
             hashed_pw = pbkdf2_sha256.hash(newpass)
-            obj['passw'] = hashed_pw
+            obj["passw"] = hashed_pw
             self.write_user(uid, obj)
+            return {"message": "done."}
+        else:
+            return {"message": f"error: no such user {uid}"}
 
+    def set_user_tz(self, uid, newtz):
+        if newtz in pytz.all_timezones or newtz.upper() in pytz.all_timezones:
+            if self.check_user_exists(uid):
+                obj = self.get_user(uid)
+                obj["tz"] = newtz
+                self.write_user(uid, obj)
+                return {"message": "done."}
+            else:
+                return {"message": f"error: no such user {uid}"}
+        else:
+            return {"message": f"error: no such tz {newtz}"}
 
 
 if __name__ == "__main__":
