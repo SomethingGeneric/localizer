@@ -109,7 +109,7 @@ class db:
                     adj = "You're"
                 else:
                     adj = "They're"
-                return me + "<p>" + adj + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users/'>userlist</a></p>"
+                return me + "<p>" + adj + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a></p>"
             else:
                 wl = me + "<ul>"
                 for uid in watching:
@@ -134,7 +134,7 @@ class db:
         the_list = "<ul>"
         for uid in users:
             the_list += (
-                "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li><br/>"
+                "<li><p><a class='slicklink' href='/users/" + uid + "'>" + uid + "</a>: " + self.get_user(uid)["tz"] + "</p></li><br/>"
             )
         the_list += "</ul>"
         return the_list
