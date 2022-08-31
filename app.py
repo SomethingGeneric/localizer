@@ -53,7 +53,7 @@ def get_emoji_of_time(h, m):
     hm = int(h + m / 30 + 0.5)
     try:
         return f"{emojis[hm]}"
-    catch:
+    except:
         return "🕒"
 
 
