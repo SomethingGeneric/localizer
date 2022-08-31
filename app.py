@@ -4,9 +4,11 @@ import time
 from flask import Flask, render_template, request, make_response, redirect
 
 from data import db
+from session import sessionmgr
 
 app = Flask(__name__)
 db = db("db")
+sessionmgr = sessionmgr()
 
 emojis = "🕐🕜🕑🕝🕒🕞🕓🕟🕔🕠🕕🕡🕖🕢🕗🕣🕘🕤🕙🕥🕚🕦🕛🕧"
 
@@ -28,30 +30,35 @@ def main():
     extra = ""
     clear_msg = False
 
-    user = request.cookies.get("uid")
+    skey = request.cookies.get("skey")
     msg = request.cookies.get("msg")
 
     if msg is not None:
         extra = '<p style="color:red;">' + msg + "</p>"
         clear_msg = True
 
-    if user is None:
+    if skey is None:
         p_title = "Home"
         p_content = extra + render_template("signin.html")
     else:
-        p_title = "Hi, " + user
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        p_content = (
-            extra
-            + render_template("logout.html")
-            + "<br/><p>Server time is: "
-            + current_time
-            + "</p>"
-        )
-        p_content += (
-            "<h2>Your data:</h2><pre><code>" + str(db.get_user(user)) + "</code></pre>"
-        )
+        user = sessionmgr.get_user_by_session(skey)
+        if user != "":
+            p_title = "Hi, " + user
+            now = datetime.utcnow()
+            current_time = now.strftime("%H:%M:%S")
+            p_content = (
+                extra
+                + render_template("logout.html")
+                + "<br/><p>UTC is: "
+                + current_time
+                + "</p>"
+                + db.make_times_list(user)
+            )
+
+
+        else:
+            p_title = "Home"
+            p_content = extra + render_template("signin.html")
 
     resp = make_response(
         render_template(
@@ -99,7 +106,7 @@ def show_users():
 
 @app.route("/users/<uid>")
 def show_user(uid):
-    if db.check_user(uid):
+    if db.check_user_exists(uid):
         extra = ""
         clear_msg = False
         msg = request.cookies.get("msg")
@@ -111,7 +118,9 @@ def show_user(uid):
         p_title = "User - " + uid
 
         p_content = extra + "<h2>Timezone: " + db.get_user(uid)["tz"] + "</h2>"
+        p_content += "<a href='/follow/" + uid + "'>Follow " + uid + "</a>"
         p_content += db.make_times_list(uid)
+
 
         resp = make_response(
             render_template(
@@ -126,6 +135,8 @@ def show_user(uid):
             resp.delete_cookie("msg")
 
         return resp
+    else:
+        return render_template("page.html", page_title="Not found", content="<p>No such user " + uid + "</p>", emoji=get_emoji_of_current())
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -154,7 +165,8 @@ def handle_signup():
     if request.method == "POST":
         uid = request.form["uid"]
         tz = request.form["tz"]
-        res = db.make_user(uid, tz)
+        passw = request.form["passw"]
+        res = db.make_user(uid, passw, tz)
         if "error" in res["message"]:
             resp = make_response(redirect("/register"))
             resp.set_cookie("msg", res["message"])
@@ -171,12 +183,14 @@ def handle_login():
         return "Go away."
     else:
         given_uid = request.form["nm"]
+        passw = request.form['passwd']
+
         resp = make_response(redirect("/"))
 
-        if db.check_user(given_uid):
-            resp.set_cookie("uid", given_uid)
+        if db.auth_user(given_uid, passw):
+            resp.set_cookie("skey", sessionmgr.make_session(given_uid))
         else:
-            resp.set_cookie("msg", "No such user " + given_uid)
+            resp.set_cookie("msg", "Auth failed for " + given_uid)
 
         return resp
 
@@ -184,9 +198,36 @@ def handle_login():
 @app.route("/dologout", methods=["POST", "GET"])
 def handle_logout():
     resp = make_response(redirect("/"))
-    resp.delete_cookie("uid")
+    skey = request.cookies.get("skey")
+    resp.delete_cookie("skey")
+    sessionmgr.destroy_session(sessionmgr.get_user_by_session(skey))
     return resp
 
+@app.route("/follow/<uid>", methods=["POST", "GET"])
+def handle_follow(uid):
+    skey = request.cookies.get('skey')
+    user = sessionmgr.get_user_by_session(skey)
+
+    if user != "":
+        db.add_watching(user, uid)
+        return "You're now following " + uid
+    else:
+        return "Please sign in first."
+
+@app.route("/unfollow/<uid>")
+def handle_unfollow(uid):
+    skey = request.cookies.get('skey')
+    user = sessionmgr.get_user_by_session(skey)
+
+    if user != "":
+        db.remove_watching(user, uid)
+        return "You're no longer following " + uid
+    else:
+        return "Please sign in first."
+
+@app.route("/passwordex")
+def dump_expg():
+    return render_template("page.html", page_title="Password Information", emoji=get_emoji_of_current(), content=render_template("pws.html"))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=9090, debug=True)

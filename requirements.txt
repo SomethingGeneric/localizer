@@ -1,4 +1,5 @@
 Flask[async]
 PyYAML
 pytz
+passlib
 black

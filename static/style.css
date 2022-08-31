@@ -51,7 +51,7 @@ body {
   color: #eeeeeecc;
 }
 
-input[type=text] {
+input {
     background-color: #414141;
     color: #eeeeeecc;
     border: none;

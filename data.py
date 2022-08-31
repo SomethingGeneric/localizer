@@ -1,4 +1,7 @@
 import os, yaml, pytz
+from passlib.hash import pbkdf2_sha256
+from datetime import datetime
+from pytz import timezone
 
 
 class db:
@@ -7,13 +10,24 @@ class db:
             os.makedirs(srcdir)
         self.srcdir = srcdir
 
-    def check_user(self, uid):
+    def write_user(self, uid, obj):
+        with open(self.srcdir + os.sep + uid, "w") as f:
+            f.write(yaml.dump(obj))
+
+    def check_user_exists(self, uid):
         if os.path.exists(self.srcdir + os.sep + uid):
             return True
         return False
 
-    def make_user(self, uid, tz):
-        if self.check_user(uid):
+    def auth_user(self, uid, attempt):
+        if self.check_user_exists(uid):
+            phash = self.get_user(uid)['passw']
+            if pbkdf2_sha256.verify(attempt, phash):
+                return True
+        return False
+
+    def make_user(self, uid, passw, tz):
+        if self.check_user_exists(uid):
             return {"message": "error: uid in use."}
         else:
             if tz not in pytz.all_timezones:
@@ -21,14 +35,13 @@ class db:
                     return {"message": "error: no such tz '" + tz + "'"}
                 else:
                     tz = tz.upper()
-
-            obj = {"tz": tz, "watching": []}
-            with open(self.srcdir + os.sep + uid, "w") as f:
-                f.write(yaml.dump(obj))
+            hashed_pw = pbkdf2_sha256.hash(passw)
+            obj = {"passw": hashed_pw, "tz": tz, "watching": []}
+            self.write_user(uid, obj)
             return {"message": "user has been registered"}
 
     def get_user(self, uid):
-        if self.check_user(uid):
+        if self.check_user_exists(uid):
             with open(self.srcdir + os.sep + uid) as f:
                 obj = yaml.safe_load(f)
             return obj
@@ -36,27 +49,47 @@ class db:
             return {"message": "not found"}
 
     def add_watching(self, uid, who):
-        if self.check_user(uid):
+        if self.check_user_exists(uid):
             user = self.get_user(uid)
             user["watching"].append(who)
-            with open(self.srcdir + os.sep + uid, "w") as f:
-                f.write(yaml.dump(user))
+            self.write_user(uid, user)
+
+    def remove_watching(self, uid, who):
+        if self.check_user_exists(uid):
+            user = self.get_user(uid)
+            user['watching'].remove(who)
+            self.write_user(uid, user)
 
     def get_watching(self, uid):
-        if self.check_user(uid):
+        if self.check_user_exists(uid):
             return self.get_user(uid)["watching"]
 
     def make_times_list(self, uid):
-        if self.check_user(uid):
+        if self.check_user_exists(uid):
+            ref_dt = datetime.utcnow()
+            print(ref_dt.strftime('%H:%M:%S'))
+            me = ""
+            my_tz = self.get_user(uid)['tz']
+            print(my_tz)
+            my_local = timezone(my_tz)
+
+            my_time = my_local.fromutc(ref_dt).strftime('%H:%M:%S')
+            print(my_time)
+            me = "For you, it's " + my_time
+
             watching = self.get_watching(uid)
             if len(watching) == 0:
-                return "<p>Not following any other users.</p>"
+                return me + "<p>Not following any other users.</p>"
             else:
-                wl = "<ul>"
+                wl = me + "<ul>"
                 for uid in watching:
-                    wl += (
-                        "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li>"
-                    )
+                    if self.check_user_exists(uid):
+                        their_tz = self.get_user(uid)['tz']
+                        local = timezone(their_tz)
+                        their_time = local.fromutc(ref_dt).strftime('%H:%M:%S')
+                        wl += (
+                                "<li><p>For " + uid + ", it's " + their_time + "</p></li>"
+                        )
                 wl += "</ul>"
                 return wl
 
@@ -65,7 +98,7 @@ class db:
         the_list = "<ul>"
         for uid in users:
             the_list += (
-                "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li><br/>"
+                    "<li><p>" + uid + ": " + self.get_user(uid)["tz"] + "</p></li><br/>"
             )
         the_list += "</ul>"
         return the_list
