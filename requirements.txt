@@ -1,5 +1,6 @@
 Flask[async]
 flask-login
+Flask-Limiter
 PyYAML
 pytz
 passlib

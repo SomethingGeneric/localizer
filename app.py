@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from flask import (
     Flask,
@@ -8,13 +9,22 @@ from flask import (
     redirect,
 )
 import flask_login
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from pytz import timezone
-from datetime import datetime
+
 
 from data import db
 
 app = Flask(__name__)
 app.secret_key = "SuperStrongAndComplicated"
+
+limiter = Limiter(
+    app,
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
@@ -201,6 +211,7 @@ def show_user(uid):
 
 
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("10 per hour")
 def handle_signup():
     if request.method == "GET":
         if flask_login.current_user.is_authenticated:
