@@ -117,7 +117,7 @@ class db:
                     me
                     + "<p>"
                     + adj
-                    + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a></p>"
+                    + " not following any other users.</p><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a>?</p>"
                 )
             else:
                 wl = me + "<ul>"
@@ -135,7 +135,7 @@ class db:
                             + their_time
                             + "</p></li><br/>"
                         )
-                wl += "</ul>"
+                wl += "</ul><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a>?</p>"
                 return wl
 
     def make_user_list(self):
