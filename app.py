@@ -60,7 +60,7 @@ def get_emoji_of_time(h, m):
 def get_emoji_for_user(username):
     if db.check_user_exists(username):
         obj = db.get_user(username)
-        tz = obj['tz']
+        tz = obj["tz"]
         local_tz = timezone(tz)
         utc = datetime.utcnow()
         hm = local_tz.fromutc(utc).strftime("%H:%M")
@@ -96,12 +96,12 @@ def main():
         now = datetime.utcnow()
         current_time = now.strftime("%H:%M:%S")
         p_content = (
-                extra
-                + render_template("logout.html")
-                + "<br/><p>UTC is: "
-                + current_time
-                + "</p>"
-                + db.make_times_list(user, True)
+            extra
+            + render_template("logout.html")
+            + "<br/><p>UTC is: "
+            + current_time
+            + "</p>"
+            + db.make_times_list(user, True)
         )
         emoji = get_emoji_for_user(user)
 
@@ -205,7 +205,9 @@ def handle_signup():
     if request.method == "GET":
         if flask_login.current_user.is_authenticated:
             resp = make_response(redirect("/"))
-            resp.set_cookie('msg', "Please sign out first if you'd like to make a new account.")
+            resp.set_cookie(
+                "msg", "Please sign out first if you'd like to make a new account."
+            )
             return resp
         else:
             extra = ""
@@ -296,11 +298,11 @@ def handle_follow(uid):
         db.add_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie('msg', "You're now following " + uid)
+        resp.set_cookie("msg", "You're now following " + uid)
         return resp
     else:
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie('msg', "Please sign in first.")
+        resp.set_cookie("msg", "Please sign in first.")
         return resp
 
 
@@ -311,11 +313,11 @@ def handle_unfollow(uid):
         db.remove_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie('msg', "You're now following " + uid)
+        resp.set_cookie("msg", "You're now following " + uid)
         return resp
     else:
         resp = make_response(redirect(request.referrer))
-        resp.set_cookie('msg', "Please sign in first.")
+        resp.set_cookie("msg", "Please sign in first.")
         return resp
 
 

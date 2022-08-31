@@ -53,7 +53,7 @@ class db:
     def add_watching(self, uid, who):
         if self.check_user_exists(uid):
             user = self.get_user(uid)
-            if who not in user['watching']:
+            if who not in user["watching"]:
                 user["watching"].append(who)
                 self.write_user(uid, user)
 
@@ -100,7 +100,15 @@ class db:
                         their_tz = self.get_user(uid)["tz"]
                         local = timezone(their_tz)
                         their_time = local.fromutc(ref_dt).strftime("%H:%M:%S")
-                        wl += "<li><p>For " + uid + ", it's " + their_time + "</p></li>"
+                        wl += (
+                            "<li><p>For <a class='slicklink' href='/users/"
+                            + uid
+                            + "'>"
+                            + uid
+                            + "</a>, it's "
+                            + their_time
+                            + "</p></li><br/>"
+                        )
                 wl += "</ul>"
                 return wl
 
