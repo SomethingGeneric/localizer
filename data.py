@@ -38,6 +38,8 @@ class db:
                 return {"message": "error: please put at least one non-number in your user id"}
             if len(passw) < 8:
                 return {"message": "error: password too short. Use at least 8 characters"}
+            if "<" in uid or ">" in uid:
+                return {"message": "error: uid contains a prohibited character"}
 
             if tz not in pytz.all_timezones:
                 if not tz.upper() in pytz.all_timezones:
