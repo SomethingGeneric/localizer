@@ -6,3 +6,4 @@ pytz
 passlib
 black
 gunicorn
+faker
