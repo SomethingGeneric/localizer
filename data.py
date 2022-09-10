@@ -3,6 +3,9 @@ from passlib.hash import pbkdf2_sha256
 from datetime import datetime
 from pytz import timezone
 
+DEFAULT_STRF = "%H:%M"
+TWELVE_STRF = "%I:%M %p"
+
 
 class db:
     def __init__(self, srcdir):
@@ -53,7 +56,7 @@ class db:
                 else:
                     tz = tz.upper()
             hashed_pw = pbkdf2_sha256.hash(passw)
-            obj = {"passw": hashed_pw, "tz": tz, "watching": []}
+            obj = {"passw": hashed_pw, "tz": tz, "watching": [], "strf": DEFAULT_STRF}
             self.write_user(uid, obj)
             return {"message": "user has been registered"}
 
@@ -91,13 +94,14 @@ class db:
     def make_times_list(self, uid, personal=False):
         if self.check_user_exists(uid):
             ref_dt = datetime.utcnow()
-            print(ref_dt.strftime("%H:%M:%S"))
+            obj = self.get_user(uid)
+            print(ref_dt.strftime(obj['strf']))
             me = ""
-            my_tz = self.get_user(uid)["tz"]
+            my_tz = obj["tz"]
             print(my_tz)
             my_local = timezone(my_tz)
 
-            my_time = my_local.fromutc(ref_dt).strftime("%H:%M:%S")
+            my_time = my_local.fromutc(ref_dt).strftime(obj['strf'])
             print(my_time)
 
             if personal:
@@ -125,7 +129,7 @@ class db:
                     if self.check_user_exists(uid):
                         their_tz = self.get_user(uid)["tz"]
                         local = timezone(their_tz)
-                        their_time = local.fromutc(ref_dt).strftime("%H:%M:%S")
+                        their_time = local.fromutc(ref_dt).strftime(obj['strf'])
                         wl += (
                             "<li><p>For <a class='slicklink' href='/users/"
                             + uid
@@ -175,6 +179,18 @@ class db:
                 return {"message": f"error: no such user {uid}"}
         else:
             return {"message": f"error: no such tz {newtz}"}
+
+    def set_user_timetype(self, uid, normal=True):
+        if self.check_user_exists(uid):
+            obj = self.get_user(uid)
+            obj["strf"] = DEFAULT_STRF if normal else TWELVE_STRF
+            self.write_user(uid, obj)
+            return {"message": f"set {uid} to {'12' if not normal else '24'}"}
+        else:
+            return {"message": f"error: no such user {uid}"}
+
+    def dump_users(self):
+        return os.listdir(self.srcdir)
 
 
 if __name__ == "__main__":

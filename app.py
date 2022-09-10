@@ -105,7 +105,7 @@ def main():
         user = flask_login.current_user.id
         p_title = "Hi, " + user
         now = datetime.utcnow()
-        current_time = now.strftime("%H:%M:%S")
+        current_time = now.strftime(db.get_user(user)['strf'])
         p_content = (
             extra
             + render_template("logout.html")
@@ -183,7 +183,7 @@ def show_user(uid):
         p_title = "User - " + uid
 
         p_content = extra + "<h2>Timezone: " + db.get_user(uid)["tz"] + "</h2>"
-        p_content += "<a href='/follow/" + uid + "'>Follow " + uid + "</a><br/>"
+        p_content += "<a class='slicklink' href='/follow/" + uid + "'>Follow " + uid + "</a><br/>"
         p_content += db.make_times_list(uid)
 
         resp = make_response(
@@ -364,6 +364,8 @@ def settings():
     else:
         newtz = request.form["tz"]
         newpass = request.form["passwd"]
+        newtztype = request.form["tztype"]
+
         uid = flask_login.current_user.id
 
         status = ""
@@ -381,6 +383,14 @@ def settings():
                 status += f"\nFailed to set new password because: {res['msg']}"
             else:
                 status += "\nSet new password."
+
+        if newtztype != "":
+            normal = True if newtztype == "24" else False
+            res = db.set_user_timetype(uid, normal)
+            if "error" not in res:
+                status += f"Set your time type to {newtztype}hr."
+            else:
+                status += f"Failed to set new time type because: {res['msg']}."
 
         resp = make_response(redirect("/"))
         resp.set_cookie("msg", status)
