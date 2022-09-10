@@ -1,5 +1,8 @@
 import os, subprocess, getpass
 
+# Feel free to edit this file, but note that `make deploy` expects the service file to be output as `new.service`
+# It, of course, is renamed to `localizer.service` as it's moved to `/etc/systemd/system/`
+
 text = open("new.service").read()
 text = text.replace(
     "GCPATH",
