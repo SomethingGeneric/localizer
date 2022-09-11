@@ -2,8 +2,11 @@
 Description=Localizer gunicorn service
 
 [Service]
+# WHO is edited by sed.py to become the current user
 User=WHO
 Type=simple
+# GCPATH is edited by sed.py to point to the user's installation of gunicorn
+# PATH becomes the output of `pwd`
 ExecStart=GCPATH --chdir PATH --workers=8 --bind=0.0.0.0 app:app
 
 [Install]

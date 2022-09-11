@@ -15,7 +15,7 @@ from flask_login import login_required
 from pytz import timezone
 from werkzeug.exceptions import HTTPException
 
-from data import db
+from uinterface import su_interface
 
 app = Flask(__name__)
 app.secret_key = "SuperStrongAndComplicated"
@@ -30,7 +30,7 @@ limiter = Limiter(
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 
-db = db("db")
+su = su_interface()
 
 
 class User(flask_login.UserMixin):
@@ -39,7 +39,7 @@ class User(flask_login.UserMixin):
 
 @login_manager.user_loader
 def user_loader(uid):
-    if not db.check_user_exists(uid):
+    if not su.db.check_user_exists(uid):
         return
     user = User()
     user.id = uid
@@ -49,7 +49,7 @@ def user_loader(uid):
 @login_manager.request_loader
 def request_loader(request):
     uid = request.form.get("uid")
-    if not db.check_user_exists(uid):
+    if not su.db.check_user_exists(uid):
         return
     user = User()
     user.id = uid
@@ -69,8 +69,8 @@ def get_emoji_of_time(h, m):
 
 
 def get_emoji_for_user(username):
-    if db.check_user_exists(username):
-        obj = db.get_user(username)
+    if su.db.check_user_exists(username):
+        obj = su.db.get_user(username)
         tz = obj["tz"]
         local_tz = timezone(tz)
         utc = datetime.utcnow()
@@ -105,7 +105,7 @@ def main():
         user = flask_login.current_user.id
         p_title = "Hi, " + user
         now = datetime.utcnow()
-        current_time = now.strftime(db.get_user(user)['strf'])
+        current_time = now.strftime(su.db.get_user(user)['strf'])
         p_content = (
             extra
             + render_template("logout.html")
@@ -113,7 +113,7 @@ def main():
             + "<br/><p>UTC is: "
             + current_time
             + "</p>"
-            + db.make_times_list(user, True)
+            + su.make_times_list(user, True)
         )
         emoji = get_emoji_for_user(user)
 
@@ -148,7 +148,7 @@ def show_users():
 
     p_title = "User List"
 
-    p_content = extra + db.make_user_list()
+    p_content = extra + su.make_user_list()
 
     resp = make_response(
         render_template(
@@ -167,7 +167,7 @@ def show_users():
 
 @app.route("/users/<uid>")
 def show_user(uid):
-    if db.check_user_exists(uid):
+    if su.db.check_user_exists(uid):
         extra = ""
         clear_msg = False
         msg = request.cookies.get("msg")
@@ -182,9 +182,9 @@ def show_user(uid):
 
         p_title = "User - " + uid
 
-        p_content = extra + "<h2>Timezone: " + db.get_user(uid)["tz"] + "</h2>"
+        p_content = extra + "<h2>Timezone: " + su.db.get_user(uid)["tz"] + "</h2>"
         p_content += "<a class='slicklink' href='/follow/" + uid + "'>Follow " + uid + "</a><br/>"
-        p_content += db.make_times_list(uid)
+        p_content += su.make_times_list(uid)
 
         resp = make_response(
             render_template(
@@ -247,7 +247,7 @@ def handle_signup():
         uid = request.form["uid"]
         tz = request.form["tz"]
         passw = request.form["passw"]
-        res = db.make_user(uid, passw, tz)
+        res = su.make_user(uid, passw, tz)
         if "error" in res["message"]:
             resp = make_response(redirect("/register"))
             resp.set_cookie("msg", res["message"])
@@ -282,7 +282,7 @@ def login():
         return resp
     else:
         uid = request.form["uid"]
-        if db.check_user_exists(uid) and db.auth_user(uid, request.form["passwd"]):
+        if su.db.check_user_exists(uid) and su.db.auth_user(uid, request.form["passwd"]):
             user = User()
             user.id = uid
             flask_login.login_user(user, remember=True)
@@ -310,7 +310,7 @@ def unauthorized_handler():
 def handle_follow(uid):
     if flask_login.current_user.is_authenticated:
         user = flask_login.current_user.id
-        res = db.add_watching(user, uid)
+        res = su.add_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
         resp.set_cookie("msg", res["message"])
@@ -325,7 +325,7 @@ def handle_follow(uid):
 def handle_unfollow(uid):
     if flask_login.current_user.is_authenticated:
         user = flask_login.current_user.id
-        res = db.remove_watching(user, uid)
+        res = su.remove_watching(user, uid)
 
         resp = make_response(redirect(request.referrer))
         resp.set_cookie("msg", res["message"])
@@ -371,14 +371,14 @@ def settings():
         status = ""
 
         if newtz != "":
-            res = db.set_user_tz(uid, newtz)
+            res = su.set_user_tz(uid, newtz)
             if "error" not in res:
                 status += f"Set your TZ to {newtz}."
             else:
                 status += f"Failed to set new tz because: {res['msg']}."
 
         if newpass != "":
-            res = db.set_user_password(uid, newpass)
+            res = su.db.set_user_password(uid, newpass)
             if "error" in res:
                 status += f"\nFailed to set new password because: {res['msg']}"
             else:
@@ -386,7 +386,7 @@ def settings():
 
         if newtztype != "":
             normal = True if newtztype == "24" else False
-            res = db.set_user_timetype(uid, normal)
+            res = su.set_user_timetype(uid, normal)
             if "error" not in res:
                 status += f"Set your time type to {newtztype}hr."
             else:
