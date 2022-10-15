@@ -82,17 +82,29 @@ class su_interface:
                 wl += "</ul><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a>?</p>"
                 return wl
 
-    def make_user_list(self):
+    def make_user_list(self, myuid=None):
         users = self.db.dump_users()
         the_list = "<ul>"
+        ref_dt = datetime.utcnow()
+
+        pref_strf = DEFAULT_STRF
+
+        if myuid is not None:
+            my_user = self.db.get_user(myuid)
+            if 'strf' in my_user:
+                pref_strf = my_user['strf']
+
+
         for uid in users:
+            user_tz = self.db.get_user(uid)["tz"]
+            tzobj = timezone(user_tz)
             the_list += (
                     "<li><p><a class='slicklink' href='/users/"
                     + uid
                     + "'>"
                     + uid
                     + "</a>: "
-                    + self.db.get_user(uid)["tz"]
+                    + user_tz + " : " + tzobj.fromutc(ref_dt).strftime(pref_strf)
                     + "</p></li><br/>"
             )
         the_list += "</ul>"

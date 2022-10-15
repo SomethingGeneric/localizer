@@ -139,8 +139,12 @@ def show_users():
     msg = request.cookies.get("msg")
     emoji = get_emoji_of_current()
 
+    myuid = None
+
     if flask_login.current_user.is_authenticated:
         emoji = get_emoji_for_user(flask_login.current_user.id)
+        myuid = flask_login.current_user.id
+
 
     if msg is not None:
         extra = '<p style="color:red;">' + msg + "</p>"
@@ -148,7 +152,7 @@ def show_users():
 
     p_title = "User List"
 
-    p_content = extra + su.make_user_list()
+    p_content = extra + su.make_user_list(myuid=myuid)
 
     resp = make_response(
         render_template(
