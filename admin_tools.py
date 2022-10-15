@@ -7,8 +7,10 @@ su = su_interface()
 DEFAULT_STRF = "%H:%M"
 
 if sys.argv[1] is None or sys.argv[1] == "":
-    print("Usage: 'password <uid> <new' or 'register <uid> <password> <timezone>' or 'reset_timetype'  or "
-          "'validate_db' (CAREFUL!)")
+    print(
+        "Usage: 'password <uid> <new' or 'register <uid> <password> <timezone>' or 'reset_timetype'  or "
+        "'validate_db' (CAREFUL!)"
+    )
 
 if sys.argv[1] == "password":
     user = sys.argv[2]
@@ -23,12 +25,12 @@ elif sys.argv[1] == "register":
     passw = sys.argv[3]
     tz = sys.argv[4]
     res = su.make_user(uid, passw, tz)
-    print(res['message'])
+    print(res["message"])
 elif sys.argv[1] == "reset_timetype":
     if input("Are you sure you want to reset timetype for *EVERYONE*? (y/N): ") == "y":
         users = su.db.dump_users()
         for uid in users:
-            su.set_user_timetype(uid) # type 'normal' (24hr) is implied
+            su.set_user_timetype(uid)  # type 'normal' (24hr) is implied
             print(f"Fixed {uid}")
         print("Done.")
     else:

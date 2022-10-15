@@ -3,6 +3,7 @@ flask-login
 Flask-Limiter
 PyYAML
 pytz
+python-dateutil
 passlib
 black
 gunicorn
