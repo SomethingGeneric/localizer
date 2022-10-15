@@ -1,6 +1,6 @@
 import pytz
 from datetime import datetime
-from pytz import timezone
+from pytz import timezone,all_timezones
 
 from simpleusers import usermgr
 
@@ -13,8 +13,14 @@ class su_interface:
         self.db = usermgr()
 
     def make_user(self, uid, passw, tz):
-        self.db.make_user(uid, passw)
-        self.db.set_user_prop(uid, 'tz', tz)
+        if tz in all_timezones:
+            self.db.make_user(uid, passw)
+            self.db.set_user_prop(uid, 'tz', tz)
+            self.db.set_user_prop(uid, 'strf', DEFAULT_STRF)
+            self.db.set_user_prop(uid, "watching", [])
+            return {"message":"ok"}
+        else:
+            return {"message":"error: Bad Timezone"}
 
     def set_user_tz(self, uid, newtz):
         if newtz in pytz.all_timezones or newtz.upper() in pytz.all_timezones:
