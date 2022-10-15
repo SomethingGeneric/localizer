@@ -42,13 +42,13 @@ class su_interface:
         else:
             return {"message": "done."}
 
-    def make_times_list(self, uid, personal=False):
+    def make_times_list(self, uid, personal=False, at_time=""):
         if self.db.check_user_exists(uid):
 
             obj = self.db.get_user(uid)
             my_tz = obj["tz"]
             my_local = timezone(my_tz)
-
+            
             ref_dt = datetime.utcnow()
 
             my_time = my_local.fromutc(ref_dt).strftime(obj["strf"])
@@ -84,9 +84,7 @@ class su_interface:
                     if self.db.check_user_exists(uid):
                         their_tz = self.db.get_user(uid)["tz"]
                         local = timezone(their_tz)
-
                         their_time = local.fromutc(ref_dt).strftime(obj["strf"])
-
                         wl += (
                             "<li><p>For <a class='slicklink' href='/users/"
                             + uid
