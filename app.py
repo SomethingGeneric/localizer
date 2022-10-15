@@ -413,6 +413,20 @@ def dump_expg():
     )
 
 
+@app.route("/privacy")
+def cookers():
+    emoji = get_emoji_of_current()
+
+    if flask_login.current_user.is_authenticated:
+        emoji = get_emoji_for_user(flask_login.current_user.id)
+    return render_template(
+        "page.html",
+        page_title="Privacy Info",
+        emoji=emoji,
+        content=render_template("privacy.html"),
+    )
+
+
 @app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
