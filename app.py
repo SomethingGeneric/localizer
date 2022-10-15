@@ -177,9 +177,7 @@ def plan():
             return render_template(
                 "page.html",
                 page_title="Plan Results",
-                content=su.make_times_list(
-                    flask_login.current_user.id, personal=True, at_time=tstr
-                ),
+                content="<br/><p><a class='slicklink' href='/'>Home</a></p><br/>" + su.make_plan(flask_login.current_user.id, tstr),
                 emoji=get_emoji_for_user(flask_login.current_user.id),
             )
         else:

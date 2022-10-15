@@ -42,21 +42,14 @@ class su_interface:
         else:
             return {"message": "done."}
 
-    def make_times_list(self, uid, personal=False, at_time=""):
+    def make_times_list(self, uid, personal=False):
         if self.db.check_user_exists(uid):
 
             obj = self.db.get_user(uid)
             my_tz = obj["tz"]
             my_local = timezone(my_tz)
 
-            localized_dt = None
-
-            if at_time != "":
-                parsed_dt = parser.parse(at_time)
-                localized_dt = my_local.localize(parsed_dt)
-
-            ref_dt = datetime.utcnow() if at_time == "" else localized_dt  # hell
-            is_utc = True if at_time == "" else False
+            ref_dt = datetime.utcnow()
 
             my_time = my_local.fromutc(ref_dt).strftime(obj["strf"])
 
@@ -86,14 +79,14 @@ class su_interface:
                 wl += "<ul>"
 
                 sadj = " it's "
-                if not is_utc:
-                    sadj = " it will be"
 
                 for uid in watching:
                     if self.db.check_user_exists(uid):
                         their_tz = self.db.get_user(uid)["tz"]
                         local = timezone(their_tz)
+
                         their_time = local.fromutc(ref_dt).strftime(obj["strf"])
+
                         wl += (
                             "<li><p>For <a class='slicklink' href='/users/"
                             + uid
@@ -104,8 +97,29 @@ class su_interface:
                             + their_time
                             + "</p></li><br/>"
                         )
-                wl += "</ul><br/><p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a>?</p>"
+
+                wl += "</ul><br/>"
+
+                if personal:
+                    wl += open("templates/plan.html").read() + "<br/>"
+
+                wl += "<p>Perhaps you'd like to see the <a class='slicklink' href='/users'>userlist</a>?</p>"
                 return wl
+
+    def make_plan(self, myuid, tstr):
+        naive_local_dt = parser.parse(tstr)
+        obj = self.db.get_user(myuid)
+        local_tz = timezone(obj["tz"])
+
+        plan = f"<p>For you, it will be {local_tz.localize(naive_local_dt).strftime(DEFAULT_STRF)}</p>"
+        plan += f"<p>In UTC, it will be {local_tz.localize(naive_local_dt).astimezone(pytz.UTC).strftime(DEFAULT_STRF)}</p><ul>"
+
+        for uid in obj["watching"]:
+            their_tz = timezone(self.db.get_user(uid)["tz"])
+            plan += f"<li><p>For <a class='slicklink' href='/users/{uid}'>{uid}</a> it will be {local_tz.localize(naive_local_dt).astimezone(their_tz).strftime(DEFAULT_STRF)}</p></li><br/>"
+
+        plan += "</ul>"
+        return plan
 
     def make_user_list(self, myuid=None):
         users = self.db.dump_users()
