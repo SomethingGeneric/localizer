@@ -105,7 +105,7 @@ def main():
         user = flask_login.current_user.id
         p_title = "Hi, " + user
         now = datetime.utcnow()
-        current_time = now.strftime(su.db.get_user(user)['strf'])
+        current_time = now.strftime(su.db.get_user(user)["strf"])
         p_content = (
             extra
             + render_template("logout.html")
@@ -132,6 +132,60 @@ def main():
     return resp
 
 
+@app.route("/plan", methods=["GET", "POST"])
+def plan():
+    if request.method == "GET":
+        extra = ""
+        clear_msg = False
+        msg = request.cookies.get("msg")
+        emoji = get_emoji_of_current()
+
+        if msg is not None:
+            extra = '<p style="color:red;">' + msg + "</p>"
+            clear_msg = True
+
+        if not flask_login.current_user.is_authenticated:
+            p_title = "Plan"
+            p_content = extra + render_template("signin.html")
+        else:
+            user = flask_login.current_user.id
+            p_title = "Hi, " + user
+            p_content = (
+                extra
+                + render_template("logout.html")
+                + "<br/><p><a class='slicklink' href='/settings'>Settings</a></p><br/>"
+                + render_template("plan.html")
+            )
+            emoji = get_emoji_for_user(user)
+
+        resp = make_response(
+            render_template(
+                "page.html",
+                page_title=p_title,
+                content=p_content,
+                emoji=emoji,
+            )
+        )
+
+        if clear_msg:
+            resp.delete_cookie("msg")
+
+        return resp
+    else:
+        if flask_login.current_user.is_authenticated:
+            tstr = request.form["timestr"]
+            return render_template(
+                "page.html",
+                page_title="Plan Results",
+                content=su.make_times_list(
+                    flask_login.current_user.id, personal=True, at_time=tstr
+                ),
+                emoji=get_emoji_for_user(flask_login.current_user.id),
+            )
+        else:
+            return "Go away"
+
+
 @app.route("/users")
 def show_users():
     extra = ""
@@ -144,7 +198,6 @@ def show_users():
     if flask_login.current_user.is_authenticated:
         emoji = get_emoji_for_user(flask_login.current_user.id)
         myuid = flask_login.current_user.id
-
 
     if msg is not None:
         extra = '<p style="color:red;">' + msg + "</p>"
@@ -187,7 +240,13 @@ def show_user(uid):
         p_title = "User - " + uid
 
         p_content = extra + "<h2>Timezone: " + su.db.get_user(uid)["tz"] + "</h2>"
-        p_content += "<a class='slicklink' href='/follow/" + uid + "'>Follow " + uid + "</a><br/>"
+        p_content += (
+            "<a class='slicklink' href='/follow/"
+            + uid
+            + "'>Follow "
+            + uid
+            + "</a><br/>"
+        )
         p_content += su.make_times_list(uid)
 
         resp = make_response(
@@ -286,7 +345,9 @@ def login():
         return resp
     else:
         uid = request.form["uid"]
-        if su.db.check_user_exists(uid) and su.db.auth_user(uid, request.form["passwd"]):
+        if su.db.check_user_exists(uid) and su.db.auth_user(
+            uid, request.form["passwd"]
+        ):
             user = User()
             user.id = uid
             flask_login.login_user(user, remember=True)
